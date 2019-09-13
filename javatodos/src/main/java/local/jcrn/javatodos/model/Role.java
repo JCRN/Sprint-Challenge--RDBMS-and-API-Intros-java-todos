@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
@@ -61,4 +62,5 @@ public class Role extends Auditable
     {
         this.userRoles = userRoles;
     }
+
 }

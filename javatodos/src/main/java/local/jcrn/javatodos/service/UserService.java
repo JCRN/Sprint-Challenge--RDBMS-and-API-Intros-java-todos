@@ -1,19 +1,18 @@
 package local.jcrn.javatodos.service;
 
 import local.jcrn.javatodos.model.User;
-import local.jcrn.javatodos.model.User;
 
 import java.util.List;
 
 public interface UserService {
 
-    List<User> findAll();
+    void delete(long id);
 
-    User findUserByName(String name);
+    List<User> findAll();
 
     User findUserById(long id);
 
-    void delete(long id);
+    org.springframework.security.core.userdetails.User findUserByName(String name);
 
     User save(User user);
 

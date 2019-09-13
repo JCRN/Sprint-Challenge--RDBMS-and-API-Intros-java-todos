@@ -1,11 +1,10 @@
 package local.jcrn.javatodos.service;
 
-import local.jcrn.javatodos.model.Quote;
+import local.jcrn.javatodos.model.Todo;
 import local.jcrn.javatodos.model.User;
 import local.jcrn.javatodos.model.UserRoles;
 import local.jcrn.javatodos.repository.RoleRepository;
 import local.jcrn.javatodos.repository.UserRepository;
-import local.jcrn.javatodos.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,10 +12,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -30,23 +29,19 @@ public class UserServiceImpl implements UserDetailsService, UserService
     @Autowired
     private RoleRepository rolerepos;
 
-    @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
+    @Override
+    public void delete(long id)
     {
-        User user = userrepos.findByUsername(username);
-        if (user == null)
+        if (userrepos.findById(id).isPresent())
         {
-            throw new UsernameNotFoundException("Invalid username or password.");
+            userrepos.deleteById(id);
+        } else
+        {
+            throw new EntityNotFoundException(Long.toString(id));
         }
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), user.getAuthority());
     }
 
-    public User findUserById(long id) throws EntityNotFoundException
-    {
-        return userrepos.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(Long.toString(id)));
-    }
-
+    @Override
     public List<User> findAll()
     {
         List<User> list = new ArrayList<>();
@@ -55,19 +50,23 @@ public class UserServiceImpl implements UserDetailsService, UserService
     }
 
     @Override
-    public void delete(long id)
+    public User findUserById(long id)
     {
-        if (userrepos.findById(id).isPresent())
-        {
-            userrepos.deleteById(id);
-        }
-        else
-        {
-            throw new EntityNotFoundException(Long.toString(id));
-        }
+        return userrepos.findById(id).orElseThrow(() -> new EntityNotFoundException(Long.toString(id)));
     }
 
-    @Transactional
+    @Override
+    public org.springframework.security.core.userdetails.User findUserByName(String username)
+    {
+        User user = userrepos.findByUsername(username);
+        if (user == null)
+        {
+            throw new UsernameNotFoundException("Invalid username or password.");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
+                user.getAuthority());
+    }
+
     @Override
     public User save(User user)
     {
@@ -82,82 +81,57 @@ public class UserServiceImpl implements UserDetailsService, UserService
         }
         newUser.setUserRoles(newRoles);
 
-        for (Quote q : user.getQuotes())
+        for (Todo t : user.getTodos())
         {
-            newUser.getQuotes().add( new Quote(q.getQuote(), newUser));
+            newUser.getTodos().add(new Todo(t.getDescription(), new Date(), newUser));
         }
 
         return userrepos.save(newUser);
     }
 
     @Override
-    public User findUserByName(String name)
-    {
-        User currentUser = userrepos.findByUsername(name);
-
-        if (currentUser != null)
-        {
-            return currentUser;
-        }
-        else
-        {
-            throw new EntityNotFoundException(name);
-        }
-    }
-
-    @Transactional
-    @Override
     public User update(User user, long id)
     {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = userrepos.findByUsername(authentication.getName());
 
-        if (currentUser != null)
-        {
-            if (id == currentUser.getUserid())
-            {
-                if (user.getUsername() != null)
-                {
+        if (currentUser != null) {
+            if (id == currentUser.getUserid()) {
+                if (user.getUsername() != null) {
                     currentUser.setUsername(user.getUsername());
                 }
 
-                if (user.getPassword() != null)
-                {
-                    currentUser.setPasswordNoEncrypt(user.getPassword());
+                if (user.getPassword() != null) {
+                    currentUser.setPassword(user.getPassword());
                 }
 
-                if (user.getUserRoles().size() > 0)
-                {
-                    // with so many relationships happening, I decided to go
-                    // with old school queries
-                    // delete the old ones
+                if (user.getUserRoles().size() > 0) {
+
                     rolerepos.deleteUserRolesByUserId(currentUser.getUserid());
 
-                    // add the new ones
-                    for (UserRoles ur : user.getUserRoles())
-                    {
+
+                    for (UserRoles ur : user.getUserRoles()) {
                         rolerepos.insertUserRoles(id, ur.getRole().getRoleid());
                     }
                 }
 
-                if (user.getQuotes().size() > 0)
-                {
-                    for (Quote q : user.getQuotes())
-                    {
-                        currentUser.getQuotes().add( new Quote(q.getQuote(), currentUser));
-                    }
-                }
                 return userrepos.save(currentUser);
-            }
-            else
-            {
+            } else {
                 throw new EntityNotFoundException(Long.toString(id) + " Not current user");
             }
-        }
-        else
-        {
+        } else {
             throw new EntityNotFoundException(authentication.getName());
         }
 
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
+    {
+        User user = userrepos.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("Invalid username or password.");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), user.getAuthority());
     }
 }
