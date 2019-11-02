@@ -1,13 +1,27 @@
-// provided by Vivek Vishwanath
+package local.jcrn;
+
+import local.jcrn.javatodos.model.Role;
+import local.jcrn.javatodos.model.Todo;
+import local.jcrn.javatodos.model.User;
+import local.jcrn.javatodos.model.UserRoles;
+import local.jcrn.javatodos.repository.RoleRepository;
+import local.jcrn.javatodos.repository.TodoRepository;
+import local.jcrn.javatodos.repository.UserRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.Date;
 
 @Transactional
 @Component
 public class SeedData implements CommandLineRunner {
     RoleRepository rolerepos;
     UserRepository userrepos;
-    ToDoRepository todorepos;
+    TodoRepository todorepos;
 
-    public SeedData(RoleRepository rolerepos, UserRepository userrepos, ToDoRepository todorepos) {
+    public SeedData(RoleRepository rolerepos, UserRepository userrepos, TodoRepository todorepos) {
         this.rolerepos = rolerepos;
         this.userrepos = userrepos;
         this.todorepos = todorepos;
